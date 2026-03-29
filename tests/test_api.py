@@ -38,10 +38,7 @@ class TestCreateTask:
     """POST /tasks のテスト"""
 
     def test_タスクを正常に作成(self, client):
-        response = client.post("/tasks", json={
-            "title": "新しいタスク",
-            "description": "説明文"
-        })
+        response = client.post("/tasks", json={"title": "新しいタスク", "description": "説明文"})
         assert response.status_code == 201
         data = response.get_json()
         assert data["title"] == "新しいタスク"
@@ -50,22 +47,17 @@ class TestCreateTask:
         assert "id" in data
 
     def test_タイトルなしでタスク作成すると400(self, client):
-        response = client.post("/tasks", json={
-            "description": "説明のみ"
-        })
+        response = client.post("/tasks", json={"description": "説明のみ"})
         assert response.status_code == 400
 
     def test_説明なしでタスク作成(self, client):
-        response = client.post("/tasks", json={
-            "title": "タイトルのみ"
-        })
+        response = client.post("/tasks", json={"title": "タイトルのみ"})
         assert response.status_code == 201
         data = response.get_json()
         assert data["description"] == ""
 
     def test_JSONなしでタスク作成するとエラー(self, client):
-        response = client.post("/tasks", data="not json",
-                               content_type="text/plain")
+        response = client.post("/tasks", data="not json", content_type="text/plain")
         assert response.status_code in (400, 415)
 
 
@@ -74,26 +66,20 @@ class TestUpdateTask:
 
     def test_タスクのタイトルを更新(self, client, sample_task):
         task_id = sample_task["id"]
-        response = client.put(f"/tasks/{task_id}", json={
-            "title": "更新されたタスク"
-        })
+        response = client.put(f"/tasks/{task_id}", json={"title": "更新されたタスク"})
         assert response.status_code == 200
         data = response.get_json()
         assert data["title"] == "更新されたタスク"
 
     def test_タスクの完了状態を更新(self, client, sample_task):
         task_id = sample_task["id"]
-        response = client.put(f"/tasks/{task_id}", json={
-            "done": True
-        })
+        response = client.put(f"/tasks/{task_id}", json={"done": True})
         assert response.status_code == 200
         data = response.get_json()
         assert data["done"] is True
 
     def test_存在しないタスクを更新すると404(self, client):
-        response = client.put("/tasks/9999", json={
-            "title": "更新"
-        })
+        response = client.put("/tasks/9999", json={"title": "更新"})
         assert response.status_code == 404
 
 

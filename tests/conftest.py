@@ -1,10 +1,11 @@
-import pytest
-import sys
 import os
+import sys
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import app, DATABASE, init_db
+from app import app
 
 
 @pytest.fixture
@@ -16,13 +17,14 @@ def client(tmp_path, monkeypatch):
 
     # 一時DBでテーブルを初期化
     import sqlite3
+
     conn = sqlite3.connect(db_path)
-    conn.execute('''CREATE TABLE IF NOT EXISTS tasks
+    conn.execute("""CREATE TABLE IF NOT EXISTS tasks
         (id INTEGER PRIMARY KEY AUTOINCREMENT,
          title TEXT NOT NULL,
          description TEXT DEFAULT '',
          done INTEGER DEFAULT 0,
-         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
     conn.commit()
     conn.close()
 
@@ -33,8 +35,7 @@ def client(tmp_path, monkeypatch):
 @pytest.fixture
 def sample_task(client):
     """テスト用のサンプルタスクを作成する"""
-    response = client.post("/tasks", json={
-        "title": "テストタスク",
-        "description": "テスト用の説明"
-    })
+    response = client.post(
+        "/tasks", json={"title": "テストタスク", "description": "テスト用の説明"}
+    )
     return response.get_json()
