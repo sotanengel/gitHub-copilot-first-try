@@ -37,6 +37,7 @@ tests/
     ci.yml          # CI/CDワークフロー
     branch-protection.yml  # ブランチ保護自動適用ワークフロー
   branch-protection.json  # ブランチ保護ルール定義
+  dependabot.yml    # 依存関係自動更新設定
 scripts/
   setup-branch-protection.sh  # ブランチ保護適用スクリプト
 ```
@@ -135,9 +136,74 @@ uv run ruff format --check .
 - Force Push 禁止
 - ブランチ削除禁止
 
+## サプライチェーン攻撃対策
+
+依存関係を経由したサプライチェーン攻撃への対策として、以下を3つ導入している。
+
+### 1. GitHub Actions SHA pinning
+
+ワークフローで外部Actionを利用する際、タグ指定（`v4`等）ではなくSHA（コミットハッシュ）でバージョンを固定する。
+
+```yaml
+# ✘ タグ指定（書き換え可能）
+- uses: actions/checkout@v4
+# ○ SHA固定
+- uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+```
+
+### 2. uv exclude-newer
+
+`pyproject.toml` に `exclude-newer = "3 days"` を設定し、公開直後のパッケージのインストールを防止する。
+
+### 3. Dependabot + cooldown
+
+`.github/dependabot.yml` で依存関係の自動更新を設定。`cooldown` で公開から3日未満のバージョンを除外する。
+
 ## PR作成ガイド
 
 開発作業が完了したら、`.github/pull_request_template.md`のテンプレートに従ってPR文を作成すること。
+
+## Design by Contract（契約プログラミング）
+
+`contract-check` ライブラリを使い、関数に事前条件・事後条件・純粋性を宣言することで、コードの意図を明示しAIの生成精度を向上させる。
+
+### インストール
+
+```bash
+uv add contract-check
+```
+
+### インポート
+
+パッケージ名は `contract-check` だが、**import 時のモジュール名は `python_contracts_rs`**。
+
+```python
+from python_contracts_rs import contract, post, pre, pure
+```
+
+### 使い方
+
+```python
+@contract(
+    pre(lambda task: task is not None),
+    post(lambda result: "id" in result and "title" in result),
+    pure(),
+)
+def task_to_dict(task):
+    return { ... }
+```
+
+- `pre()` — 関数呼び出し前に引数を検証する事前条件
+- `post()` — 関数の戻り値を検証する事後条件
+- `pure()` — 関数が副作用を持たないことを宣言
+- `raises()` — 発生しうる例外を宣言
+- `read_only()` / `mutating()` — 引数の変更有無を宣言
+
+### 適用方針
+
+- データ変換関数（`task_to_dict` 等）には `pre` + `post` + `pure` を付与
+- バリデーション関数（`validate_title` 等）には `pre` + `pure` を付与
+- ルートハンドラ（副作用あり）にはcontractを付与しない
 
 ### Copilotへの依頼方法
 
