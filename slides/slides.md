@@ -203,10 +203,27 @@ main
             └─ step/3-linter    ← リンター導入
                  └─ step/4-cicd    ← CI/CD追加
                       └─ step/5-copilot-instructions ← 指示書追加
-                           └─ step/6-slides ← この発表資料
+                           └─ step/6-slides ← 発表資料
+                                └─ step/7-pr-template ← PRテンプレート
 ```
 
 各ブランチの差分で「何が追加されたか」が一目瞭然
+
+---
+
+## Tips：CopilotにPR文を自動生成させる 💡
+
+### 仕組み
+
+1. `.github/pull_request_template.md` にPRテンプレートを用意
+2. `copilot-instructions.md` に「PR作成ガイド」を記載
+3. 開発完了後にCopilotへ一言依頼するだけ
+
+### 依頼例
+
+> 「このブランチの変更内容を元に、PRテンプレートに沿ったPR文を作成して」
+
+Copilotが差分を読み取り、概要・変更内容・テスト項目を自動で埋めてくれる
 
 ---
 
