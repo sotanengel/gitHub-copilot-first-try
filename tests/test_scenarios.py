@@ -6,10 +6,9 @@ class TestTaskLifecycle:
 
     def test_タスクの作成_更新_完了_削除フロー(self, client):
         # 1. タスクを作成
-        res = client.post("/tasks", json={
-            "title": "買い物リスト作成",
-            "description": "牛乳、卵、パンを買う"
-        })
+        res = client.post(
+            "/tasks", json={"title": "買い物リスト作成", "description": "牛乳、卵、パンを買う"}
+        )
         assert res.status_code == 201
         task_id = res.get_json()["id"]
 
@@ -20,10 +19,13 @@ class TestTaskLifecycle:
         assert any(t["id"] == task_id for t in tasks)
 
         # 3. タスクの内容を更新
-        res = client.put(f"/tasks/{task_id}", json={
-            "title": "買い物リスト作成（更新済）",
-            "description": "牛乳、卵、パン、バターを買う"
-        })
+        res = client.put(
+            f"/tasks/{task_id}",
+            json={
+                "title": "買い物リスト作成（更新済）",
+                "description": "牛乳、卵、パン、バターを買う",
+            },
+        )
         assert res.status_code == 200
         assert res.get_json()["title"] == "買い物リスト作成（更新済）"
 
