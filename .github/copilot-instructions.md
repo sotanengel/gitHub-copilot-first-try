@@ -35,6 +35,7 @@ tests/
 .github/
   workflows/
     ci.yml          # CI/CDワークフロー
+    branch-protection.yml  # ブランチ保護自動適用ワークフロー
   branch-protection.json  # ブランチ保護ルール定義
 scripts/
   setup-branch-protection.sh  # ブランチ保護適用スクリプト
@@ -108,9 +109,16 @@ uv run ruff format --check .
 ### 設定ファイル
 
 - `.github/branch-protection.json` — 保護ルールの定義（レビュー必須、ステータスチェック必須等）
-- `scripts/setup-branch-protection.sh` — `gh` CLIで保護ルールをGitHubに適用するスクリプト
+- `.github/workflows/branch-protection.yml` — mainへのマージ時に自動適用するワークフロー
+- `scripts/setup-branch-protection.sh` — `gh` CLIで手動適用するスクリプト（初回セットアップ用）
 
-### 適用方法
+### 自動適用
+
+`.github/branch-protection.json` を変更するPRがmainにマージされると、GitHub Actionsが自動的に保護ルールを適用する。
+
+**前提条件:** リポジトリの Settings > Secrets に `BRANCH_PROTECTION_TOKEN`（`admin` 権限付きPersonal Access Token）を設定すること。
+
+### 手動適用（初回セットアップ）
 
 ```bash
 ./scripts/setup-branch-protection.sh
