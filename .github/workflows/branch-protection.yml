@@ -1,0 +1,28 @@
+name: Apply Branch Protection
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/branch-protection.json"
+
+jobs:
+  apply:
+    name: Apply Branch Protection Rules
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply branch protection
+        env:
+          GH_TOKEN: ${{ secrets.BRANCH_PROTECTION_TOKEN }}
+        run: |
+          BRANCH=$(jq -r '.branch' .github/branch-protection.json)
+          jq 'del(.branch)' .github/branch-protection.json | \
+            gh api \
+              --method PUT \
+              "repos/${{ github.repository }}/branches/$BRANCH/protection" \
+              --input -
+          echo "✅ ブランチ保護ルールを適用しました"
