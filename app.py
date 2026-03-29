@@ -1,6 +1,7 @@
 import sqlite3
 
 from flask import Flask, jsonify, request
+from python_contracts_rs import contract, post, pre, pure
 
 app = Flask(__name__)
 DATABASE = "tasks.db"
@@ -24,6 +25,31 @@ def init_db():
     conn.close()
 
 
+@contract(
+    pre(lambda task: task is not None),
+    post(lambda result: "id" in result and "title" in result and "done" in result),
+    pure(),
+)
+def task_to_dict(task):
+    """sqlite3.Row をAPIレスポンス用の辞書に変換する。"""
+    return {
+        "id": task["id"],
+        "title": task["title"],
+        "description": task["description"],
+        "done": bool(task["done"]),
+        "created_at": task["created_at"],
+    }
+
+
+@contract(
+    pre(lambda title: isinstance(title, str) and len(title) > 0),
+    pure(),
+)
+def validate_title(title):
+    """タスクタイトルが有効であることを検証する。"""
+    return title.strip()
+
+
 init_db()
 
 
@@ -34,15 +60,7 @@ def get_tasks():
     conn.close()
     result = []
     for task in tasks:
-        result.append(
-            {
-                "id": task["id"],
-                "title": task["title"],
-                "description": task["description"],
-                "done": bool(task["done"]),
-                "created_at": task["created_at"],
-            }
-        )
+        result.append(task_to_dict(task))
     return jsonify(result)
 
 
@@ -53,22 +71,14 @@ def get_task(task_id):
     conn.close()
     if task is None:
         return jsonify({"error": "Task not found"}), 404
-    return jsonify(
-        {
-            "id": task["id"],
-            "title": task["title"],
-            "description": task["description"],
-            "done": bool(task["done"]),
-            "created_at": task["created_at"],
-        }
-    )
+    return jsonify(task_to_dict(task))
 
 
 @app.route("/tasks", methods=["POST"])
 def create_task():
     if not request.json or "title" not in request.json:
         return jsonify({"error": "Title is required"}), 400
-    title = request.json["title"]
+    title = validate_title(request.json["title"])
     description = request.json.get("description", "")
     conn = get_db()
     cursor = conn.execute(
@@ -78,15 +88,7 @@ def create_task():
     task_id = cursor.lastrowid
     task = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
     conn.close()
-    return jsonify(
-        {
-            "id": task["id"],
-            "title": task["title"],
-            "description": task["description"],
-            "done": bool(task["done"]),
-            "created_at": task["created_at"],
-        }
-    ), 201
+    return jsonify(task_to_dict(task)), 201
 
 
 @app.route("/tasks/<int:task_id>", methods=["PUT"])
@@ -106,15 +108,7 @@ def update_task(task_id):
     conn.commit()
     updated = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
     conn.close()
-    return jsonify(
-        {
-            "id": updated["id"],
-            "title": updated["title"],
-            "description": updated["description"],
-            "done": bool(updated["done"]),
-            "created_at": updated["created_at"],
-        }
-    )
+    return jsonify(task_to_dict(updated))
 
 
 @app.route("/tasks/<int:task_id>", methods=["DELETE"])
@@ -143,15 +137,7 @@ def search_tasks():
     conn.close()
     result = []
     for task in tasks:
-        result.append(
-            {
-                "id": task["id"],
-                "title": task["title"],
-                "description": task["description"],
-                "done": bool(task["done"]),
-                "created_at": task["created_at"],
-            }
-        )
+        result.append(task_to_dict(task))
     return jsonify(result)
 
 
@@ -167,15 +153,7 @@ def toggle_task(task_id):
     conn.commit()
     updated = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
     conn.close()
-    return jsonify(
-        {
-            "id": updated["id"],
-            "title": updated["title"],
-            "description": updated["description"],
-            "done": bool(updated["done"]),
-            "created_at": updated["created_at"],
-        }
-    )
+    return jsonify(task_to_dict(updated))
 
 
 if __name__ == "__main__":

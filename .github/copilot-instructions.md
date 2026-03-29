@@ -163,6 +163,48 @@ uv run ruff format --check .
 
 開発作業が完了したら、`.github/pull_request_template.md`のテンプレートに従ってPR文を作成すること。
 
+## Design by Contract（契約プログラミング）
+
+`contract-check` ライブラリを使い、関数に事前条件・事後条件・純粋性を宣言することで、コードの意図を明示しAIの生成精度を向上させる。
+
+### インストール
+
+```bash
+uv add contract-check
+```
+
+### インポート
+
+パッケージ名は `contract-check` だが、**import 時のモジュール名は `python_contracts_rs`**。
+
+```python
+from python_contracts_rs import contract, post, pre, pure
+```
+
+### 使い方
+
+```python
+@contract(
+    pre(lambda task: task is not None),
+    post(lambda result: "id" in result and "title" in result),
+    pure(),
+)
+def task_to_dict(task):
+    return { ... }
+```
+
+- `pre()` — 関数呼び出し前に引数を検証する事前条件
+- `post()` — 関数の戻り値を検証する事後条件
+- `pure()` — 関数が副作用を持たないことを宣言
+- `raises()` — 発生しうる例外を宣言
+- `read_only()` / `mutating()` — 引数の変更有無を宣言
+
+### 適用方針
+
+- データ変換関数（`task_to_dict` 等）には `pre` + `post` + `pure` を付与
+- バリデーション関数（`validate_title` 等）には `pre` + `pure` を付与
+- ルートハンドラ（副作用あり）にはcontractを付与しない
+
 ### Copilotへの依頼方法
 
 作業完了後に以下のように依頼すると、Copilotがブランチの差分を読み取りPR文を自動生成する：
