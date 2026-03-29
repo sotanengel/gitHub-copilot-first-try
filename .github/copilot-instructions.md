@@ -37,6 +37,7 @@ tests/
     ci.yml          # CI/CDワークフロー
     branch-protection.yml  # ブランチ保護自動適用ワークフロー
   branch-protection.json  # ブランチ保護ルール定義
+  dependabot.yml    # 依存関係自動更新設定
 scripts/
   setup-branch-protection.sh  # ブランチ保護適用スクリプト
 ```
@@ -134,6 +135,29 @@ uv run ruff format --check .
 - 管理者にも適用
 - Force Push 禁止
 - ブランチ削除禁止
+
+## サプライチェーン攻撃対策
+
+依存関係を経由したサプライチェーン攻撃への対策として、以下を3つ導入している。
+
+### 1. GitHub Actions SHA pinning
+
+ワークフローで外部Actionを利用する際、タグ指定（`v4`等）ではなくSHA（コミットハッシュ）でバージョンを固定する。
+
+```yaml
+# ✘ タグ指定（書き換え可能）
+- uses: actions/checkout@v4
+# ○ SHA固定
+- uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+```
+
+### 2. uv exclude-newer
+
+`pyproject.toml` に `exclude-newer = "3 days"` を設定し、公開直後のパッケージのインストールを防止する。
+
+### 3. Dependabot + cooldown
+
+`.github/dependabot.yml` で依存関係の自動更新を設定。`cooldown` で公開から3日未満のバージョンを除外する。
 
 ## PR作成ガイド
 
