@@ -35,6 +35,9 @@ tests/
 .github/
   workflows/
     ci.yml          # CI/CDワークフロー
+  branch-protection.json  # ブランチ保護ルール定義
+scripts/
+  setup-branch-protection.sh  # ブランチ保護適用スクリプト
 ```
 
 ## API仕様
@@ -97,6 +100,32 @@ uv run ruff format --check .
 - `###` よりも `##` の見出し＋インライン説明の方がコンパクト
 - コードブロックの空行を減らす
 - `slides_images/` は`.gitignore`に追加済みのためコミットされない
+
+## ブランチ保護の適用
+
+`main`ブランチの保護ルールはコードベースで管理している。
+
+### 設定ファイル
+
+- `.github/branch-protection.json` — 保護ルールの定義（レビュー必須、ステータスチェック必須等）
+- `scripts/setup-branch-protection.sh` — `gh` CLIで保護ルールをGitHubに適用するスクリプト
+
+### 適用方法
+
+```bash
+./scripts/setup-branch-protection.sh
+```
+
+前提条件: `gh` CLI がインストール済み＆認証済み、`jq` がインストール済みであること。
+
+### 保護ルールの内容
+
+- PRレビュー必須（1名以上の承認）
+- 古いレビューの自動却下
+- ステータスチェック必須（Lint, Test）
+- 管理者にも適用
+- Force Push 禁止
+- ブランチ削除禁止
 
 ## PR作成ガイド
 

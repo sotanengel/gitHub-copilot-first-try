@@ -205,6 +205,7 @@ main
                       └─ step/5-copilot-instructions ← 指示書追加
                            └─ step/6-slides ← 発表資料
                                 └─ step/7-pr-template ← PRテンプレート
+                                     └─ step/8-branch-protection ← ブランチ保護
 ```
 
 各ブランチの差分で「何が追加されたか」が一目瞭然
@@ -224,6 +225,20 @@ main
 > 「このブランチの変更内容を元に、PRテンプレートに沿ったPR文を作成して」
 
 Copilotが差分を読み取り、概要・変更内容・テスト項目を自動で埋めてくれる
+
+---
+
+## Tips：ブランチ保護をコードベースで管理する 🛡️
+
+### 仕組み
+
+1. `.github/branch-protection.json` に保護ルールをJSONで定義
+2. `scripts/setup-branch-protection.sh` で `gh` CLI経由で適用
+3. ルール変更はJSONを編集 → スクリプト再実行するだけ
+
+### 保護ルールの内容
+
+PRレビュー必須 / ステータスチェック必須（Lint, Test） / Force Push禁止 / 管理者にも適用
 
 ---
 
