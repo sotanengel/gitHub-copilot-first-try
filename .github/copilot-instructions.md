@@ -9,6 +9,7 @@
 - **言語**: Python 3.10+
 - **フレームワーク**: Flask
 - **データベース**: SQLite
+- **パッケージ管理**: uv
 - **テスト**: pytest
 - **リンター/フォーマッター**: ruff
 - **CI/CD**: GitHub Actions
@@ -24,8 +25,9 @@
 
 ```
 app.py              # メインアプリケーション（Flask API）
-requirements.txt    # Python依存パッケージ
-pyproject.toml      # ruff設定
+pyproject.toml      # プロジェクト設定・依存関係・ruff設定
+uv.lock             # 依存関係のロックファイル
+.python-version     # Pythonバージョン指定
 tests/
   conftest.py       # テストのフィクスチャ定義
   test_api.py       # 各エンドポイントの結合テスト
@@ -47,17 +49,23 @@ tests/
 | GET | `/tasks/search?q=` | タスク検索 |
 | PATCH | `/tasks/<id>/toggle` | 完了/未完了トグル |
 
+## セットアップ
+
+```bash
+uv sync
+```
+
 ## テストの実行
 
 ```bash
-pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
 ## リントの実行
 
 ```bash
-ruff check .
-ruff format --check .
+uv run ruff check .
+uv run ruff format --check .
 ```
 
 ## 開発時の注意事項
@@ -65,4 +73,5 @@ ruff format --check .
 - データベースはファイルベース（`tasks.db`）。テスト時は`tmp_path`で一時DBを使用する
 - 新しいエンドポイントを追加した場合は、`tests/test_api.py`に結合テストを追加すること
 - 複数エンドポイントを跨ぐシナリオテストは`tests/test_scenarios.py`に追加すること
-- コミット前に`ruff check .`と`ruff format --check .`を実行すること
+- コミット前に`uv run ruff check .`と`uv run ruff format --check .`を実行すること
+- 依存関係の追加は`uv add <パッケージ名>`で行うこと（requirements.txtは使用しない）

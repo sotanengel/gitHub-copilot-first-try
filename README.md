@@ -34,6 +34,7 @@ main
 - **言語**: Python 3.10+
 - **フレームワーク**: Flask
 - **データベース**: SQLite
+- **パッケージ管理**: uv
 - **テスト**: pytest
 - **リンター/フォーマッター**: ruff
 - **CI/CD**: GitHub Actions
@@ -54,19 +55,19 @@ main
 ## セットアップ
 
 ```bash
-pip install -r requirements.txt
-python app.py
+uv sync
+uv run python app.py
 ```
 
 ## テスト・リントの実行
 
 ```bash
 # テスト
-pytest tests/ -v
+uv run pytest tests/ -v
 
 # リント
-ruff check .
-ruff format --check .
+uv run ruff check .
+uv run ruff format --check .
 ```
 
 ## ライセンス

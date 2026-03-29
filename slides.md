@@ -133,17 +133,15 @@ name: CI
 on:
   push:
     branches: [main, "step/**"]
-  pull_request:
-    branches: [main]
-
 jobs:
-  lint:     # ruff check + format check
-  test:     # pytest（lintパス後に実行）
+  lint:     # uv run ruff check + format check
+  test:     # uv run pytest（lintパス後に実行）
 ```
 
-**効果：**
+**ポイント：**
+- `astral-sh/setup-uv` アクションでuvを環境非依存にセットアップ
+- `uv sync --frozen` でロックファイルから再現可能な環境を構築
 - Push/PR時に自動でリント＋テスト実行
-- コード品質の担保がCI上で自動化
 
 ---
 
@@ -164,7 +162,9 @@ FlaskベースのタスクAPIです。
 ## 開発時の注意事項
 - 新規エンドポイント追加時はtest_api.pyに
   結合テストを追加すること
-- コミット前にruff check .を実行すること
+## 開発環境の指示も一緒に
+- コミット前にruv run ruff check .を実行すること
+- 依存追加はuv addで行うこと
 ```
 
 **効果：** Copilotがプロジェクト固有のルールを理解し、より的確なコード生成が可能に
