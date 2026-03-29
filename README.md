@@ -69,7 +69,3 @@ uv run pytest tests/ -v
 uv run ruff check .
 uv run ruff format --check .
 ```
-
-## ライセンス
-
-[MIT](LICENSE)
