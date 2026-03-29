@@ -46,3 +46,20 @@ jobs:
 
       - name: Run tests
         run: uv run pytest tests/ -v
+
+  container-smoke:
+    name: Container Build & Smoke
+    runs-on: ubuntu-latest
+    needs: lint
+    env:
+      CONTAINER_ENGINE: docker
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Build image
+        run: ./scripts/build-image.sh --image ai-agent-sandbox:ci
+
+      - name: Smoke test
+        env:
+          IMAGE: ai-agent-sandbox:ci
+        run: ./scripts/smoke-test.sh

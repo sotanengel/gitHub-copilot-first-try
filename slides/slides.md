@@ -208,6 +208,7 @@ main
                                      └─ step/8-branch-protection ← ブランチ保護
                                           └─ step/9-security ← サプライチェーン対策
                                                └─ step/10-contract-check ← 契約プログラミング
+                                                    └─ step/11-container ← コンテナ基盤
 ```
 
 各ブランチの差分で「何が追加されたか」が一目瞭然
@@ -278,6 +279,27 @@ def task_to_dict(task):
 **2. uv exclude-newer** — 公開3日未満のパッケージを除外
 
 **3. Dependabot + cooldown** — 依存更新自動化 + 3日の検疫期間
+
+---
+
+## Tips：AIエージェント用コンテナ基盤 🐳
+
+### セキュアなサンドボックスで安全に自動開発
+
+```yaml
+# compose.yaml
+services:
+  sandbox:
+    read_only: true       # root FS は読み取り専用
+    network_mode: none    # オフライン既定
+    cap_drop: [ALL]       # 全権限をdrop
+```
+
+### 主な特徴
+
+- オフライン既定 → 依存取得時のみ `--online` で明示許可
+- 書き込みは `/workspace` と `.sandbox/home` のみ
+- 監査ログをhost側に記録 / `AGENTS.md` で全エージェント共通ルール統一
 
 ---
 

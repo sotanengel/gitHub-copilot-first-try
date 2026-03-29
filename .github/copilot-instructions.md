@@ -40,6 +40,18 @@ tests/
   dependabot.yml    # 依存関係自動更新設定
 scripts/
   setup-branch-protection.sh  # ブランチ保護適用スクリプト
+  run-sandbox.sh              # オフライン既定のコンテナ実行ラッパー
+  build-image.sh              # コンテナイメージビルド
+  smoke-test.sh               # 最低限の動作確認
+Containerfile               # AIエージェント用コンテナイメージ定義
+compose.yaml                # Compose起動定義
+Makefile                    # コンテナ操作のショートカット
+.devcontainer/
+  devcontainer.json          # VS Code Dev Container設定
+docs/                       # 設計・セキュリティ・互換性ドキュメント
+examples/                   # 多言語サンプルコード
+AGENTS.md                   # AIエージェント共通ルール
+CLAUDE.md / GEMINI.md       # エージェント固有設定
 ```
 
 ## API仕様
@@ -204,6 +216,43 @@ def task_to_dict(task):
 - データ変換関数（`task_to_dict` 等）には `pre` + `post` + `pure` を付与
 - バリデーション関数（`validate_title` 等）には `pre` + `pure` を付与
 - ルートハンドラ（副作用あり）にはcontractを付与しない
+
+## AIエージェント用コンテナ基盤
+
+AIエージェントが安全に開発作業を行うためのコンテナ環境を提供する。
+
+### セキュリティ既定
+
+- root filesystemはread-only
+- 既定で `--network none`（オフライン）
+- 書き込み先は `workspace` と `.sandbox/home` のみ
+- 全Linux capabilityをdrop
+- 実行ログはhost側に監査ログとして記録
+
+### 基本操作
+
+```bash
+# イメージビルド
+./scripts/build-image.sh --image ai-agent-sandbox:latest
+
+# オフライン実行（既定）
+./scripts/run-sandbox.sh --image ai-agent-sandbox:latest
+
+# 依存取得時のみオンライン
+./scripts/run-sandbox.sh --image ai-agent-sandbox:latest --online --reason "install deps"
+
+# 動作確認
+IMAGE=ai-agent-sandbox:latest ./scripts/smoke-test.sh
+```
+
+### エージェント設定
+
+- `AGENTS.md` — 全エージェント共通のワーキングルール
+- `CLAUDE.md` — Claude Code固有の設定
+- `GEMINI.md` — Gemini CLI固有の設定
+- `.github/copilot-instructions.md` — GitHub Copilot指示書
+- `.cursor/rules/00-project.mdc` — Cursor用ルール
+- `.aider.conf.yml` — Aider用設定
 
 ### Copilotへの依頼方法
 
