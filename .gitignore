@@ -6,3 +6,8 @@ __pycache__/
 venv/
 .venv/
 slides_images/
+.DS_Store
+.sandbox/
+dist/
+tmp/
+*.log
