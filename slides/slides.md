@@ -40,6 +40,22 @@ style: |
 
 ---
 
+## 効果的なプロンプトの書き方
+
+**ワンショット**：指示を一度に渡す — シンプルだが文脈不足になりやすい
+**Fewショット（例示付き）**：具体的な変更例を一緒に渡す — 出力精度が上がる
+
+本セミナーでは **ブランチ差分を例示として活用** する手法を紹介：
+
+```text
+このリポジトリの step/1-api → step/2-tests ブランチの差分を参考に、
+同様の変更を段階的に実装してください
+```
+
+差分という「具体例」を渡すことで、ワンショットでもFewショット相当の精度になる
+
+---
+
 ## テストもリンターもないコードは変更が怖い
 
 ```python
@@ -59,13 +75,15 @@ def get_tasks():
 
 ## Step 1：既存コードを変えずにテストだけ追加する
 
-Copilotが既存の `app.py` を読み取り、APIの振る舞いに沿ったテストを生成：
-
-- `conftest.py` — 一時DB生成のフィクスチャ
-- `test_api.py` — 各エンドポイントの結合テスト（18件）
-- `test_scenarios.py` — 複数操作の連結テスト（4件）
-
+`conftest.py` / `test_api.py`（18件） / `test_scenarios.py`（4件）を生成
 既存コードは **一切変更しない** — コード文脈を理解した生成がここで活きる
+
+**プロンプト例：**
+```text
+git@github.com:sotanengel/gitHub-copilot-first-try.git の
+step/1-api ブランチから step/2-tests ブランチの差分を参考に、
+テストを段階的に実装してください
+```
 
 ---
 
@@ -85,52 +103,43 @@ test_scenarios.py::test_作成_更新_完了_削除フロー PASSED
 
 ## Step 2：決定論的なリンターでAIの出力ブレを補う
 
-Copilotでruff設定を生成し、以後は **ルールベースで一貫した整形** を実行：
+Copilotでruff設定を生成 → **ルールベースで一貫した整形** を実行
+AIの生成は確率的 → リンターが決定論的に統一する
 
-```toml
-[tool.ruff]
-target-version = "py310"
-line-length = 100
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
+**プロンプト例：**
+```text
+git@github.com:sotanengel/gitHub-copilot-first-try.git の
+step/2-tests ブランチから step/3-linter ブランチの差分を参考に、
+リンター設定を段階的に導入してください
 ```
-
-AIの生成は確率的で出力にばらつきがある → リンターが決定論的に統一する
 
 ---
 
 ## Step 3：CIで「確率論的な変更」を毎回検証する
 
-Copilotがプロジェクトに合ったワークフローを提案：
-
-```yaml
-# .github/workflows/ci.yml
-jobs:
-  lint:     # ruff check + format check
-  test:     # pytest（lintパス後に実行）
-```
-
 AIが生成したコードも人が書いたコードも、同じ基準で自動検証される
 この仕組みがあるからこそ、AIを安心して活用できる
+
+**プロンプト例：**
+```text
+git@github.com:sotanengel/gitHub-copilot-first-try.git の
+step/3-linter ブランチから step/4-cicd ブランチの差分を参考に、
+CI/CDワークフローを段階的に構築してください
+```
 
 ---
 
 ## Step 4：指示書でCopilotの生成精度を底上げする
 
-```markdown
-# Copilot Instructions
-## プロジェクト概要
-FlaskベースのタスクAPIです。
-## コーディング規約
-- ruffの設定に従うこと
-- テスト関数名は日本語で記述してよい
-## 開発時の注意事項
-- エンドポイント追加時はtest_api.pyにテスト追加
-- コミット前にruff check .を実行
-```
-
 確率論的なAIに文脈を与えることで、生成の的中率が上がる
+プロジェクト概要 / コーディング規約 / 注意事項を `.github/copilot-instructions.md` に記述
+
+**プロンプト例：**
+```text
+git@github.com:sotanengel/gitHub-copilot-first-try.git の
+step/4-cicd ブランチから step/5-copilot-instructions ブランチの差分を
+参考に、Copilot指示書を作成してください
+```
 
 ---
 
