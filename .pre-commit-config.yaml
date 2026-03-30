@@ -48,3 +48,9 @@ repos:
         entry: ./scripts/check-sandbox-runtime-config.sh
         language: system
         pass_filenames: false
+      - id: marp-export-pdf
+        name: export slides to PDF
+        entry: marp slides/slides.md --pdf -o slides/slides.pdf
+        language: system
+        files: ^slides/slides\.md$
+        pass_filenames: false
