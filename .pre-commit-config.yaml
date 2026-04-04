@@ -50,7 +50,7 @@ repos:
         pass_filenames: false
       - id: marp-export-pdf
         name: export slides to PDF
-        entry: marp slides/slides.md --pdf -o slides/slides.pdf
+        entry: ./scripts/export-slides-pdf.sh
         language: system
         files: ^slides/slides\.md$
         pass_filenames: false

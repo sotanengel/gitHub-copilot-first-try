@@ -44,21 +44,11 @@ jobs:
 
             EXISTING=$(gh issue list --label "container-upstream-update" --state open --json number --jq '.[0].number // empty' || true)
             if [[ -z "${EXISTING}" ]]; then
+              BODY=$(printf "## 概要\n\n上流リポジトリ \`bokunokangaeta-saikyono-container\` に新しいコミットが検出されました。\n\n- **現在のピン留め**: \`%s\`\n- **上流の最新**: \`%s\`\n- **差分確認**: https://github.com/sotanengel/bokunokangaeta-saikyono-container/compare/%s...%s\n\n## 対応\n\n1. 上流の変更内容を確認する\n2. 必要に応じてコンテナ関連ファイルを更新する\n3. \`.github/container-upstream-sha.txt\` を最新のハッシュに更新する" \
+                "${PINNED_SHA}" "${UPSTREAM_SHA}" "${PINNED_SHA}" "${UPSTREAM_SHA}")
               gh issue create \
                 --title "コンテナ基盤の上流に更新があります" \
-                --body "## 概要
-
-上流リポジトリ \`bokunokangaeta-saikyono-container\` に新しいコミットが検出されました。
-
-- **現在のピン留め**: \`${PINNED_SHA}\`
-- **上流の最新**: \`${UPSTREAM_SHA}\`
-- **差分確認**: https://github.com/sotanengel/bokunokangaeta-saikyono-container/compare/${PINNED_SHA}...${UPSTREAM_SHA}
-
-## 対応
-
-1. 上流の変更内容を確認する
-2. 必要に応じてコンテナ関連ファイルを更新する
-3. \`.github/container-upstream-sha.txt\` を最新のハッシュに更新する" \
+                --body "${BODY}" \
                 --label "container-upstream-update"
               echo "📝 Issueを作成しました"
             else
