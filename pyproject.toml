@@ -29,3 +29,7 @@ known-first-party = ["app"]
 
 [tool.uv]
 exclude-newer = "3 days"
+
+[[tool.uv.index]]
+url = "https://pypi.flatt.tech/simple/"
+default = true
