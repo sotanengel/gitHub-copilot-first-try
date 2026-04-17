@@ -23,7 +23,7 @@
 
 ## プロジェクト構成
 
-```
+```text
 app.py              # メインアプリケーション（Flask API）
 pyproject.toml      # プロジェクト設定・依存関係・ruff設定
 uv.lock             # 依存関係のロックファイル
@@ -35,12 +35,29 @@ tests/
 .github/
   workflows/
     ci.yml          # CI/CDワークフロー
+    branch-protection.yml  # ブランチ保護自動適用ワークフロー
+  branch-protection.json  # ブランチ保護ルール定義
+  dependabot.yml    # 依存関係自動更新設定
+scripts/
+  setup-branch-protection.sh  # ブランチ保護適用スクリプト
+  run-sandbox.sh              # オフライン既定のコンテナ実行ラッパー
+  build-image.sh              # コンテナイメージビルド
+  smoke-test.sh               # 最低限の動作確認
+Containerfile               # AIエージェント用コンテナイメージ定義
+compose.yaml                # Compose起動定義
+Makefile                    # コンテナ操作のショートカット
+.devcontainer/
+  devcontainer.json          # VS Code Dev Container設定
+docs/                       # 設計・セキュリティ・互換性ドキュメント
+examples/                   # 多言語サンプルコード
+AGENTS.md                   # AIエージェント共通ルール
+CLAUDE.md / GEMINI.md       # エージェント固有設定
 ```
 
 ## API仕様
 
 | メソッド | パス | 説明 |
-|---------|------|------|
+| --------- | ------ | ------ |
 | GET | `/tasks` | 全タスク一覧取得 |
 | GET | `/tasks/<id>` | タスク詳細取得 |
 | POST | `/tasks` | タスク作成 |
@@ -97,3 +114,159 @@ uv run ruff format --check .
 - `###` よりも `##` の見出し＋インライン説明の方がコンパクト
 - コードブロックの空行を減らす
 - `slides_images/` は`.gitignore`に追加済みのためコミットされない
+
+## ブランチ保護の適用
+
+`main`ブランチの保護ルールはコードベースで管理している。
+
+### 設定ファイル
+
+- `.github/branch-protection.json` — 保護ルールの定義（レビュー必須、ステータスチェック必須等）
+- `.github/workflows/branch-protection.yml` — mainへのマージ時に自動適用するワークフロー
+- `scripts/setup-branch-protection.sh` — `gh` CLIで手動適用するスクリプト（初回セットアップ用）
+
+### 自動適用
+
+`.github/branch-protection.json` を変更するPRがmainにマージされると、GitHub Actionsが自動的に保護ルールを適用する。
+
+**前提条件:** リポジトリの Settings > Secrets に `BRANCH_PROTECTION_TOKEN`（`admin` 権限付きPersonal Access Token）を設定すること。
+
+### 手動適用（初回セットアップ）
+
+```bash
+./scripts/setup-branch-protection.sh
+```
+
+前提条件: `gh` CLI がインストール済み＆認証済み、`jq` がインストール済みであること。
+
+### 保護ルールの内容
+
+- PRレビュー必須（1名以上の承認）
+- 古いレビューの自動却下
+- ステータスチェック必須（Lint, Test）
+- 管理者にも適用
+- Force Push 禁止
+- ブランチ削除禁止
+
+## サプライチェーン攻撃対策
+
+依存関係を経由したサプライチェーン攻撃への対策として、以下を3つ導入している。
+
+### 1. GitHub Actions SHA pinning
+
+ワークフローで外部Actionを利用する際、タグ指定（`v4`等）ではなくSHA（コミットハッシュ）でバージョンを固定する。
+
+```yaml
+# ✘ タグ指定（書き換え可能）
+- uses: actions/checkout@v4
+# ○ SHA固定
+- uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+```
+
+### 2. uv exclude-newer
+
+`pyproject.toml` に `exclude-newer = "3 days"` を設定し、公開直後のパッケージのインストールを防止する。
+
+### 3. Dependabot + cooldown
+
+`.github/dependabot.yml` で依存関係の自動更新を設定。`cooldown` で公開から3日未満のバージョンを除外する。
+
+## PR作成ガイド
+
+開発作業が完了したら、`.github/pull_request_template.md`のテンプレートに従ってPR文を作成すること。
+
+## Design by Contract（契約プログラミング）
+
+`contract-check` ライブラリを使い、関数に事前条件・事後条件・純粋性を宣言することで、コードの意図を明示しAIの生成精度を向上させる。
+
+### インストール
+
+```bash
+uv add contract-check
+```
+
+### インポート
+
+パッケージ名は `contract-check` だが、**import 時のモジュール名は `python_contracts_rs`**。
+
+```python
+from python_contracts_rs import contract, post, pre, pure
+```
+
+### 使い方
+
+```python
+@contract(
+    pre(lambda task: task is not None),
+    post(lambda result: "id" in result and "title" in result),
+    pure(),
+)
+def task_to_dict(task):
+    return { ... }
+```
+
+- `pre()` — 関数呼び出し前に引数を検証する事前条件
+- `post()` — 関数の戻り値を検証する事後条件
+- `pure()` — 関数が副作用を持たないことを宣言
+- `raises()` — 発生しうる例外を宣言
+- `read_only()` / `mutating()` — 引数の変更有無を宣言
+
+### 適用方針
+
+- データ変換関数（`task_to_dict` 等）には `pre` + `post` + `pure` を付与
+- バリデーション関数（`validate_title` 等）には `pre` + `pure` を付与
+- ルートハンドラ（副作用あり）にはcontractを付与しない
+
+## AIエージェント用コンテナ基盤
+
+AIエージェントが安全に開発作業を行うためのコンテナ環境を提供する。
+
+### セキュリティ既定
+
+- root filesystemはread-only
+- 既定で `--network none`（オフライン）
+- 書き込み先は `workspace` と `.sandbox/home` のみ
+- 全Linux capabilityをdrop
+- 実行ログはhost側に監査ログとして記録
+
+### 基本操作
+
+```bash
+# イメージビルド
+./scripts/build-image.sh --image ai-agent-sandbox:latest
+
+# オフライン実行（既定）
+./scripts/run-sandbox.sh --image ai-agent-sandbox:latest
+
+# 依存取得時のみオンライン
+./scripts/run-sandbox.sh --image ai-agent-sandbox:latest --online --reason "install deps"
+
+# 動作確認
+IMAGE=ai-agent-sandbox:latest ./scripts/smoke-test.sh
+```
+
+### エージェント設定
+
+- `AGENTS.md` — 全エージェント共通のワーキングルール
+- `CLAUDE.md` — Claude Code固有の設定
+- `GEMINI.md` — Gemini CLI固有の設定
+- `.github/copilot-instructions.md` — GitHub Copilot指示書
+- `.cursor/rules/00-project.mdc` — Cursor用ルール
+- `.aider.conf.yml` — Aider用設定
+
+### Copilotへの依頼方法
+
+作業完了後に以下のように依頼すると、Copilotがブランチの差分を読み取りPR文を自動生成する：
+
+> 「このブランチの変更内容を元に、PRテンプレートに沿ったPR文を作成してください」
+
+### PR文作成の手順
+
+1. `git diff <ベースブランチ>..HEAD --stat` で変更ファイル一覧を確認
+2. 各変更ファイルの差分内容を読み取る
+3. `.github/pull_request_template.md` のテンプレートに沿って以下を埋める：
+   - **概要**: 変更の目的を1〜2文で要約
+   - **変更内容**: 具体的な変更点をリストアップ
+   - **変更の種類**: 該当するチェックボックスにチェック
+   - **テスト**: 実行すべきテストコマンドと確認事項
+4. 生成されたPR文をクリップボードにコピーまたはファイル出力する

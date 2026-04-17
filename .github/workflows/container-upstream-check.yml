@@ -1,0 +1,59 @@
+name: Container Upstream Check
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"  # 毎週月曜 9:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check-upstream:
+    name: Check Container Upstream Updates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Get upstream latest commit
+        id: upstream
+        run: |
+          UPSTREAM_SHA=$(git ls-remote https://github.com/sotanengel/bokunokangaeta-saikyono-container.git HEAD | cut -f1)
+          echo "sha=${UPSTREAM_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Upstream latest: ${UPSTREAM_SHA}"
+
+      - name: Get pinned commit
+        id: pinned
+        run: |
+          PINNED_SHA=$(cat .github/container-upstream-sha.txt | tr -d '[:space:]')
+          echo "sha=${PINNED_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Pinned: ${PINNED_SHA}"
+
+      - name: Compare
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_SHA: ${{ steps.upstream.outputs.sha }}
+          PINNED_SHA: ${{ steps.pinned.outputs.sha }}
+        run: |
+          if [[ "${UPSTREAM_SHA}" == "${PINNED_SHA}" ]]; then
+            echo "✅ コンテナ基盤は最新です (${PINNED_SHA})"
+          else
+            echo "⚠️ 上流に更新があります"
+            echo "  Pinned:   ${PINNED_SHA}"
+            echo "  Upstream: ${UPSTREAM_SHA}"
+
+            EXISTING=$(gh issue list --label "container-upstream-update" --state open --json number --jq '.[0].number // empty' || true)
+            if [[ -z "${EXISTING}" ]]; then
+              BODY=$(printf "## 概要\n\n上流リポジトリ \`bokunokangaeta-saikyono-container\` に新しいコミットが検出されました。\n\n- **現在のピン留め**: \`%s\`\n- **上流の最新**: \`%s\`\n- **差分確認**: https://github.com/sotanengel/bokunokangaeta-saikyono-container/compare/%s...%s\n\n## 対応\n\n1. 上流の変更内容を確認する\n2. 必要に応じてコンテナ関連ファイルを更新する\n3. \`.github/container-upstream-sha.txt\` を最新のハッシュに更新する" \
+                "${PINNED_SHA}" "${UPSTREAM_SHA}" "${PINNED_SHA}" "${UPSTREAM_SHA}")
+              gh issue create \
+                --title "コンテナ基盤の上流に更新があります" \
+                --body "${BODY}" \
+                --label "container-upstream-update"
+              echo "📝 Issueを作成しました"
+            else
+              echo "📝 既存のIssue #${EXISTING} があるためスキップ"
+            fi
+
+            exit 1
+          fi
