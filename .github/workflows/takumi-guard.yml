@@ -4,9 +4,9 @@ jobs:
   pypi-supply-chain-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v6
-      - uses: flatt-security/setup-takumi-guard-pypi@v1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - uses: flatt-security/setup-takumi-guard-pypi@733047c120b6377fa05fb77f714df8d8cd3a41a9 # v1.0.1
       - name: Install and scan pip dependencies
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
